@@ -7,9 +7,9 @@
 
     coq-8_18 = {
       type = "github";
-      owner = "coq";
+      owner = "Yann-Leray";
       repo = "coq";
-      ref = "V8.18.0";
+      ref = "rewrite-rules";
     };
 
     coq-8_18.inputs.nixpkgs.follows = "nixpkgs";
@@ -40,6 +40,7 @@
           python3
           time
           dune_3
+	  git
         ] ++ (with ocamlPackages; [
           lablgtk3-sourceview3
           glib
