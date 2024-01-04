@@ -40,7 +40,7 @@ let compactify s =
 (* TODO this should be exposed by Coq and removed from here *)
 let pr_args args more_implicits mods =
   let open Vernacexpr in
-  let pr_s = prlist (fun CAst.{v=s} -> str "%" ++ str s) in
+  let pr_s = prlist (fun CAst.{v=s} -> str "%" ++ str (snd s)) in
   let pr_if b x = if b then x else str "" in
   let pr_one_arg (x,k) = pr_if k (str"!") ++ Name.print x in
   let pr_br imp force x =
@@ -57,7 +57,7 @@ let pr_args args more_implicits mods =
     else
       let rec fold extra = function
         | RealArg arg :: tl when
-            List.equal (fun a b -> String.equal a.CAst.v b.CAst.v) arg.notation_scope s
+            List.equal (fun a b -> String.equal (snd a.CAst.v) (snd b.CAst.v)) arg.notation_scope s
             && arg.implicit_status = imp ->
           fold ((arg.name,arg.recarg_like) :: extra) tl
         | args -> List.rev extra, args
@@ -97,9 +97,12 @@ let pr_args args more_implicits mods =
            | `ClearBidiHint -> str "clear bidirectionality hint")
          mods
 
+let implicit_kind_of_status_info (i : Impargs.implicit_status_info) =match i with
+  | {impl_pos = na, _ , _; impl_max} -> na, if impl_max then Glob_term.MaxImplicit else Glob_term.NonMaxImplicit 
+
 let implicit_kind_of_status = function
   | None -> Anonymous, Glob_term.Explicit
-  | Some ((na,_,_),_,(maximal,_)) -> na, if maximal then Glob_term.MaxImplicit else Glob_term.NonMaxImplicit
+  | Some i -> implicit_kind_of_status_info i
 
 let extra_implicit_kind_of_status imp =
   let _,imp = implicit_kind_of_status imp in
@@ -117,7 +120,7 @@ let needs_extra_scopes ref scopes =
   let ty, _ctx = Typeops.type_of_global_in_context env ref in
   aux env ty scopes
 
-let rec main_implicits i renames recargs scopes impls =
+let rec main_implicits i renames recargs (scopes : pp_tag list list) (impls : Impargs.implicit_status list) =
   if renames = [] && recargs = [] && scopes = [] && impls = [] then []
   else
     let recarg_like, recargs = match recargs with
@@ -126,12 +129,12 @@ let rec main_implicits i renames recargs scopes impls =
     in
     let (name, implicit_status) =
       match renames, impls with
-      | _, (Some _ as i) :: _ -> implicit_kind_of_status i
+      | _, s :: _ -> implicit_kind_of_status s
       | name::_, _ -> (name,Glob_term.Explicit)
-      | [], (None::_ | []) -> (Anonymous, Glob_term.Explicit)
+      | [], _ -> (Anonymous, Glob_term.Explicit)
     in
     let notation_scope = match scopes with
-      | scope :: _ -> List.map CAst.make scope
+      | scope :: _ -> List.map CAst.make (List.map (fun x -> Constrexpr.DelimOnlyTmpScope , x) scope)
       | [] -> []
     in
     let status = {Vernacexpr.implicit_status; name; recarg_like; notation_scope} in
@@ -166,9 +169,14 @@ let rec insert_fake_args volatile bidi impls =
     let f = Option.map pred in
     RealArg hd :: insert_fake_args (f volatile) (f bidi) tl
 
-let print_arguments ref =
+let print_arguments (ref : GlobRef.t) =
   let flags, recargs, nargs_for_red =
     let open Reductionops.ReductionBehaviour in
+    match ref with
+    | VarRef _ -> [], [], None
+    | IndRef _ -> [], [], None
+    | ConstructRef _ -> [], [], None
+    | ConstRef ref ->
     match get ref with
     | None -> [], [], None
     | Some NeverUnfold -> [`ReductionNeverUnfold], [], None

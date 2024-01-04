@@ -32,11 +32,11 @@ let global_module qid =
       CErrors.user_err ?loc:qid.CAst.loc
        (str "Module/Section " ++ Ppconstr.pr_qualid qid ++ str " not found.")
 let interp_search_restriction = function
-  | SearchOutside l -> (List.map global_module l, true)
-  | SearchInside l -> (List.map global_module l, false)
+  | SearchOutside l -> SearchOutside (List.map global_module l)
+  | SearchInside l -> SearchInside (List.map global_module l)
 
 let interp_search ~id env sigma s r =
-  let pr_search ref _kind env c =
+  let pr_search ref _kind env _ c =
     let name = pr_global ref in
     let open Impargs in
     let impls = implicits_of_global ref in

@@ -189,7 +189,8 @@ let interp_qed_delayed ~proof_using ~state_id ~st =
       let sigma, _ = Declare.Proof.get_current_context proof in
       let initial_goals pf = Proofview.initial_goals Proof.((data pf).entry) in
       let terms = List.map (fun (_,_,x) -> x) (initial_goals (Declare.Proof.get proof)) in
-      let using = Proof_using.definition_using env sigma ~using:proof_using ~terms in
+      let fixnames = [] in
+      let using = Proof_using.definition_using env sigma ~fixnames ~using:proof_using ~terms in
       let vars = Environ.named_context env in
       Names.Id.Set.iter (fun id ->
           if not (List.exists Util.(Context.Named.Declaration.get_id %> Names.Id.equal id) vars) then
