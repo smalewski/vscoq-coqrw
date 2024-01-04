@@ -134,7 +134,7 @@ let rec main_implicits i renames recargs (scopes : pp_tag list list) (impls : Im
       | [], _ -> (Anonymous, Glob_term.Explicit)
     in
     let notation_scope = match scopes with
-      | scope :: _ -> List.map CAst.make (List.map (fun x -> Constrexpr.DelimOnlyTmpScope , x) scope)
+      | scope :: _ -> List.map CAst.make (List.map (fun x -> Constrexpr.DelimUnboundedScope , x) scope)
       | [] -> []
     in
     let status = {Vernacexpr.implicit_status; name; recarg_like; notation_scope} in
