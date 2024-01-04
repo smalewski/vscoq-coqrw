@@ -22,7 +22,7 @@
    let coq = coq-8_18.defaultPackage.${system}; in
    rec {
 
-    packages.default = self.packages.${system}.vscoq-language-server;
+    defaultPackage = self.packages.${system}.vscoq-language-server;
 
     packages.vscoq-language-server =
       # Notice the reference to nixpkgs here.
